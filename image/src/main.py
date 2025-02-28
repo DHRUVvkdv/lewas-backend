@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from typing import List, Optional
 from pydantic import BaseModel, Field
 from decimal import Decimal
+import random
 
 # Load environment variables
 load_dotenv()
@@ -283,10 +284,18 @@ async def batch_create_sensor_readings(readings: List[SensorReading] = Body(...)
     try:
         # Process each reading
         reading_ids = []
-        with table.batch_writer() as batch:
-            for reading in readings:
-                # Generate a unique reading ID
-                reading_id = f"{reading.timestamp.isoformat()}-{reading.sensor_id}"
+        successful_items = 0
+        failed_items = 0
+
+        # Use individual put_item operations instead of batch_writer to avoid duplicate key issues
+        for reading in readings:
+            try:
+                # Generate a unique reading ID with additional randomness
+                timestamp_part = reading.timestamp.isoformat()
+                random_suffix = "".join(
+                    random.choices("abcdefghijklmnopqrstuvwxyz0123456789", k=8)
+                )
+                reading_id = f"{timestamp_part}-{reading.sensor_id}-{random_suffix}"
                 reading_ids.append(reading_id)
 
                 # Prepare item for DynamoDB
@@ -303,12 +312,24 @@ async def batch_create_sensor_readings(readings: List[SensorReading] = Body(...)
                 if reading.location:
                     item["location"] = reading.location
 
-                # Add to batch
-                batch.put_item(Item=item)
+                # Optional UUID field if provided by client
+                if hasattr(reading, "reading_uuid") and reading.reading_uuid:
+                    item["reading_uuid"] = reading.reading_uuid
 
+                # Store in DynamoDB
+                table.put_item(Item=item)
+                successful_items += 1
+
+            except Exception as item_error:
+                failed_items += 1
+                logger.warning(f"Error processing individual reading: {item_error}")
+
+        # Return summary of the operation
         return {
-            "message": f"Successfully created {len(reading_ids)} sensor readings",
+            "message": f"Successfully created {successful_items} sensor readings (failed: {failed_items})",
             "reading_ids": reading_ids,
+            "successful": successful_items,
+            "failed": failed_items,
         }
 
     except Exception as e:
