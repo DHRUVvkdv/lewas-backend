@@ -319,6 +319,7 @@ async def batch_create_sensor_readings(readings: List[SensorReading] = Body(...)
         )
 
 
+# Fixed route to get all sensor readings with pagination
 @app.get("/sensors/readings", tags=["Sensors"], dependencies=[Depends(get_api_key)])
 async def get_all_sensor_readings(
     start_time: Optional[datetime] = Query(
@@ -338,6 +339,12 @@ async def get_all_sensor_readings(
             end_time = datetime.now()
         if not start_time:
             start_time = end_time - timedelta(days=7)  # Default to last 7 days
+
+        # Ensure datetimes are timezone-naive for consistent comparison
+        if start_time.tzinfo is not None:
+            start_time = start_time.replace(tzinfo=None)
+        if end_time.tzinfo is not None:
+            end_time = end_time.replace(tzinfo=None)
 
         # Prepare scan parameters
         scan_params = {"Limit": limit}
@@ -368,10 +375,6 @@ async def get_all_sensor_readings(
         if sensor_id:
             filter_expressions.append(Key("sensor_id").eq(sensor_id))
 
-        # Add timestamp filtering
-        # Note: For scan operations, timestamp filtering might not use indices efficiently
-        # So we'll filter results after fetching them
-
         # Execute the scan
         if filter_expressions:
             # Combine filter expressions if there are multiple
@@ -387,11 +390,18 @@ async def get_all_sensor_readings(
         items = []
         for item in response.get("Items", []):
             try:
-                item_timestamp = datetime.fromisoformat(item.get("timestamp"))
-                if start_time <= item_timestamp <= end_time:
-                    # Convert timestamp string to datetime for response
-                    item["timestamp"] = item_timestamp
-                    items.append(item)
+                # Get timestamp from the item and make it timezone-naive for comparison
+                timestamp_str = item.get("timestamp")
+                if timestamp_str:
+                    item_timestamp = datetime.fromisoformat(timestamp_str)
+                    # Remove timezone info if present
+                    if item_timestamp.tzinfo is not None:
+                        item_timestamp = item_timestamp.replace(tzinfo=None)
+
+                    # Check if timestamp is within the specified range
+                    if start_time <= item_timestamp <= end_time:
+                        # Keep the original timestamp string for the response
+                        items.append(item)
             except (ValueError, TypeError) as e:
                 logger.warning(f"Skipping item with invalid timestamp: {e}")
 
