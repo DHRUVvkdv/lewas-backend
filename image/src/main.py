@@ -24,6 +24,8 @@ API_KEY_NAME = "X-API-Key"
 DYNAMODB_TABLE_NAME = os.getenv("DYNAMODB_TABLE_NAME", "lewas-sensors-table")
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 
+from animal_data_routes import router as animal_router
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -41,6 +43,8 @@ app = FastAPI(
     description="LEWAS Lab API for environmental sensor data collection and retrieval",
     version="0.1.0",
 )
+
+app.include_router(animal_router)
 
 # Add CORS middleware
 app.add_middleware(
