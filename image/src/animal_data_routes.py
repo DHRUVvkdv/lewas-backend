@@ -188,9 +188,8 @@ async def get_all_animal_data(
         if not end_time:
             end_time = datetime.now()
         if not start_time:
-            start_time = end_time.replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )  # Default to current day
+            start_time = datetime(2000, 1, 1)
+            # Default to current day
 
         # Ensure datetimes are timezone-naive for consistent comparison
         if start_time.tzinfo is not None:
@@ -289,9 +288,10 @@ async def get_animal_data_by_cow_id(
         if not end_time:
             end_time = datetime.now()
         if not start_time:
-            start_time = end_time.replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )  # Default to current day
+            start_time = datetime(2000, 1, 1)
+            # start_time = end_time.replace(
+            #     hour=0, minute=0, second=0, microsecond=0
+            # )  # Default to current day
 
         # Ensure datetimes are timezone-naive for consistent comparison
         if start_time.tzinfo is not None:
