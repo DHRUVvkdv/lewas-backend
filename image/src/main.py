@@ -363,7 +363,7 @@ async def get_all_sensor_readings(
         if not end_time:
             end_time = datetime.now()
         if not start_time:
-            start_time = end_time - timedelta(days=7)  # Default to last 7 days
+            start_time = end_time - timedelta(days=30)  # Default to last 30 days
 
         # Ensure datetimes are timezone-naive for consistent comparison
         if start_time.tzinfo is not None:
