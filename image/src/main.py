@@ -353,7 +353,7 @@ async def get_all_sensor_readings(
     end_time: Optional[datetime] = Query(None, description="End time for data range"),
     parameter_type: Optional[str] = Query(None, description="Filter by parameter type"),
     sensor_id: Optional[str] = Query(None, description="Filter by sensor ID"),
-    limit: int = Query(100, description="Maximum number of readings to return"),
+    limit: int = Query(None, description="Maximum number of readings to return"),
     next_token: Optional[str] = Query(
         None, description="Pagination token for getting next set of results"
     ),
@@ -372,7 +372,8 @@ async def get_all_sensor_readings(
             end_time = end_time.replace(tzinfo=None)
 
         # Prepare scan parameters
-        scan_params = {"Limit": limit}
+        # scan_params = {"Limit": limit}
+        scan_params = {}
 
         # Add pagination token if provided
         if next_token:
