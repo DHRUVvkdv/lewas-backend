@@ -7,3 +7,10 @@ First
 cdk init app --language=typescript
 cdk bootstrap --region us-east-1 --profile lewas
 cdk deploy --profile lewas
+
+Deleted 909 images using this command:
+docker system prune -a --volumes
+
+400GB was occupied on PC, after the command it is 340 GB.
+
+Total reclaimed space: 39.94GB (output from the command)

@@ -12,7 +12,7 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 from datetime import datetime
 import boto3
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Key, Attr
 import logging
 import os
 import random
@@ -40,6 +40,7 @@ class AnimalDataInput(BaseModel):
     cow_id: str
     response_type: str
     time: Optional[datetime] = Field(default_factory=datetime.now)
+    source: Optional[str] = Field(default="api")
 
 
 class AnimalDataResponse(BaseModel):
@@ -47,6 +48,7 @@ class AnimalDataResponse(BaseModel):
     cow_id: str
     response_type: str
     time: datetime
+    source: str
 
 
 class AnimalDataListResponse(BaseModel):
@@ -86,26 +88,24 @@ async def create_animal_data(data: AnimalDataInput = Body(...)):
     try:
         # Generate a unique entry ID
         entry_id = str(uuid.uuid4())
-
         # Prepare item for DynamoDB
         item = {
             "entry_id": entry_id,
             "cow_id": data.cow_id,
             "response_type": data.response_type,
             "time": data.time.isoformat(),
+            "source": data.source,  # Use the source from input
         }
-
         # Store in DynamoDB
         animal_table.put_item(Item=item)
-
         # Return the created data with its ID
         return {
             "entry_id": entry_id,
             "cow_id": data.cow_id,
             "response_type": data.response_type,
             "time": data.time,
+            "source": data.source,  # Include source in response
         }
-
     except Exception as e:
         logger.error(f"Error creating animal data: {e}")
         raise HTTPException(
@@ -139,6 +139,7 @@ async def batch_create_animal_data(data_entries: List[AnimalDataInput] = Body(..
                     "cow_id": data.cow_id,
                     "response_type": data.response_type,
                     "time": data.time.isoformat(),
+                    "source": data.source,
                 }
 
                 # Store in DynamoDB
@@ -189,16 +190,19 @@ async def get_all_animal_data(
             end_time = datetime.now()
         if not start_time:
             start_time = datetime(2000, 1, 1)
-            # Default to current day
 
-        # Ensure datetimes are timezone-naive for consistent comparison
-        if start_time.tzinfo is not None:
-            start_time = start_time.replace(tzinfo=None)
-        if end_time.tzinfo is not None:
-            end_time = end_time.replace(tzinfo=None)
+        # Convert to ISO format for DynamoDB query
+        start_time_iso = start_time.isoformat()
+        end_time_iso = end_time.isoformat()
 
-        # Prepare scan parameters
-        scan_params = {"Limit": limit}
+        # Prepare query parameters using the GSI
+        query_params = {
+            "IndexName": "source-time-index",
+            "KeyConditionExpression": Key("source").eq("api")
+            & Key("time").between(start_time_iso, end_time_iso),
+            "ScanIndexForward": False,  # False = newest first (descending order)
+            "Limit": limit,
+        }
 
         # Add pagination token if provided
         if next_token:
@@ -206,7 +210,7 @@ async def get_all_animal_data(
                 decoded_token = json.loads(
                     base64.b64decode(next_token.encode()).decode()
                 )
-                scan_params["ExclusiveStartKey"] = decoded_token
+                query_params["ExclusiveStartKey"] = decoded_token
             except Exception as e:
                 logger.error(f"Error decoding pagination token: {e}")
                 raise HTTPException(
@@ -214,40 +218,30 @@ async def get_all_animal_data(
                     detail="Invalid pagination token",
                 )
 
-        # Build filter expressions
+        # Add filter expressions for response_type and cow_id if provided
         filter_expressions = []
-
         if response_type:
-            filter_expressions.append(Key("response_type").eq(response_type))
-
+            filter_expressions.append(Attr("response_type").eq(response_type))
         if cow_id:
-            filter_expressions.append(Key("cow_id").eq(cow_id))
+            filter_expressions.append(Attr("cow_id").eq(cow_id))
 
-        # Execute the scan
         if filter_expressions:
-            # Combine filter expressions if there are multiple
+            # Combine filter expressions
             combined_filter = filter_expressions[0]
             for expr in filter_expressions[1:]:
                 combined_filter = combined_filter & expr
+            query_params["FilterExpression"] = combined_filter
 
-            scan_params["FilterExpression"] = combined_filter
+        # Execute the query
+        response = animal_table.query(**query_params)
 
-        response = animal_table.scan(**scan_params)
-
-        # Filter by time and convert time strings to datetime objects
+        # Process items - convert time strings to datetime objects
         items = []
         for item in response.get("Items", []):
             try:
-                time_str = item.get("time")
-                if time_str:
-                    item_time = datetime.fromisoformat(time_str)
-                    # Remove timezone info if present
-                    if item_time.tzinfo is not None:
-                        item_time = item_time.replace(tzinfo=None)
-
-                    if start_time <= item_time <= end_time:
-                        item["time"] = item_time  # Convert to datetime for response
-                        items.append(item)
+                if "time" in item:
+                    item["time"] = datetime.fromisoformat(item["time"])
+                items.append(item)
             except (ValueError, TypeError) as e:
                 logger.warning(f"Skipping item with invalid time: {e}")
 
@@ -258,7 +252,12 @@ async def get_all_animal_data(
                 json.dumps(response["LastEvaluatedKey"]).encode()
             ).decode()
 
-        return {"data": items, "count": len(items), "next_token": next_page_token}
+        return {
+            "data": items,
+            "count": len(items),
+            "next_token": next_page_token,
+            "total_items": response.get("Count", len(items)),
+        }
 
     except Exception as e:
         logger.error(f"Error retrieving animal data: {e}")
@@ -485,4 +484,47 @@ def create_animal_table_if_not_exists():
 
 
 # Uncomment this line to auto-create the table (for testing only)
-create_animal_table_if_not_exists()
+# create_animal_table_if_not_exists()
+
+
+@router.post(
+    "/admin/update-source-field",
+    dependencies=[Depends(get_api_key)],
+)
+async def update_source_field():
+    try:
+        # Scan for all items without a source field
+        response = animal_table.scan()
+
+        updated_count = 0
+        for item in response.get("Items", []):
+            if "source" not in item:
+                # Update the item to add the source field
+                animal_table.update_item(
+                    Key={"entry_id": item["entry_id"]},
+                    UpdateExpression="SET #src = :val",
+                    ExpressionAttributeNames={"#src": "source"},
+                    ExpressionAttributeValues={":val": "api"},
+                )
+                updated_count += 1
+
+        # Handle pagination if there are more items
+        while "LastEvaluatedKey" in response:
+            response = animal_table.scan(ExclusiveStartKey=response["LastEvaluatedKey"])
+            for item in response.get("Items", []):
+                if "source" not in item:
+                    animal_table.update_item(
+                        Key={"entry_id": item["entry_id"]},
+                        UpdateExpression="SET #src = :val",
+                        ExpressionAttributeNames={"#src": "source"},
+                        ExpressionAttributeValues={":val": "api"},
+                    )
+                    updated_count += 1
+
+        return {"message": f"Updated {updated_count} items to add source field"}
+    except Exception as e:
+        logger.error(f"Error updating source field: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update source field: {str(e)}",
+        )
