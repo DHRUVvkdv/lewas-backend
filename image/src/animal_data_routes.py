@@ -55,6 +55,7 @@ class AnimalDataListResponse(BaseModel):
     data: List[AnimalDataResponse]
     count: int
     next_token: Optional[str] = None
+    total_count: Optional[int] = None
 
 
 # Import security dependency from main app
@@ -195,6 +196,11 @@ async def get_all_animal_data(
         start_time_iso = start_time.isoformat()
         end_time_iso = end_time.isoformat()
 
+        count_response = animal_table.scan(
+            Select="COUNT", FilterExpression=Attr("source").eq("api")
+        )
+        total_count = count_response.get("Count", 0)
+
         # Prepare query parameters using the GSI
         query_params = {
             "IndexName": "source-time-index",
@@ -256,7 +262,7 @@ async def get_all_animal_data(
             "data": items,
             "count": len(items),
             "next_token": next_page_token,
-            "total_items": response.get("Count", len(items)),
+            "total_count": total_count,
         }
 
     except Exception as e:
