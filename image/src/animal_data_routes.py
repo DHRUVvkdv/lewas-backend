@@ -196,27 +196,32 @@ async def get_all_animal_data(
         start_time_iso = start_time.isoformat()
         end_time_iso = end_time.isoformat()
 
-        count_response = animal_table.scan(
-            Select="COUNT", FilterExpression=Attr("source").eq("api")
-        )
+        # Count total items (including both sources)
+        count_response = animal_table.scan(Select="COUNT")
         total_count = count_response.get("Count", 0)
 
-        # Prepare query parameters using the GSI
-        query_params = {
-            "IndexName": "source-time-index",
-            "KeyConditionExpression": Key("source").eq("api")
-            & Key("time").between(start_time_iso, end_time_iso),
-            "ScanIndexForward": False,  # False = newest first (descending order)
-            "Limit": limit,
-        }
+        # Prepare filter expressions for both queries
+        filter_expressions = []
+        if response_type:
+            filter_expressions.append(Attr("response_type").eq(response_type))
+        if cow_id:
+            filter_expressions.append(Attr("cow_id").eq(cow_id))
 
-        # Add pagination token if provided
+        combined_filter = None
+        if filter_expressions:
+            # Combine filter expressions
+            combined_filter = filter_expressions[0]
+            for expr in filter_expressions[1:]:
+                combined_filter = combined_filter & expr
+
+        # Handle pagination token
+        decoded_token = None
         if next_token:
             try:
                 decoded_token = json.loads(
                     base64.b64decode(next_token.encode()).decode()
                 )
-                query_params["ExclusiveStartKey"] = decoded_token
+                # The token now contains two keys: 'api' and 'raspberry_pi'
             except Exception as e:
                 logger.error(f"Error decoding pagination token: {e}")
                 raise HTTPException(
@@ -224,43 +229,102 @@ async def get_all_animal_data(
                     detail="Invalid pagination token",
                 )
 
-        # Add filter expressions for response_type and cow_id if provided
-        filter_expressions = []
-        if response_type:
-            filter_expressions.append(Attr("response_type").eq(response_type))
-        if cow_id:
-            filter_expressions.append(Attr("cow_id").eq(cow_id))
+        # Query for "api" source
+        api_params = {
+            "IndexName": "source-time-index",
+            "KeyConditionExpression": Key("source").eq("api")
+            & Key("time").between(start_time_iso, end_time_iso),
+            "ScanIndexForward": False,  # False = newest first (descending order)
+            "Limit": limit,
+        }
 
-        if filter_expressions:
-            # Combine filter expressions
-            combined_filter = filter_expressions[0]
-            for expr in filter_expressions[1:]:
-                combined_filter = combined_filter & expr
-            query_params["FilterExpression"] = combined_filter
+        if combined_filter:
+            api_params["FilterExpression"] = combined_filter
 
-        # Execute the query
-        response = animal_table.query(**query_params)
+        if decoded_token and "api" in decoded_token:
+            api_params["ExclusiveStartKey"] = decoded_token["api"]
 
-        # Process items - convert time strings to datetime objects
-        items = []
-        for item in response.get("Items", []):
+        api_response = animal_table.query(**api_params)
+
+        # Query for "Raspberry Pi" source
+        pi_params = {
+            "IndexName": "source-time-index",
+            "KeyConditionExpression": Key("source").eq("Raspberry Pi")
+            & Key("time").between(start_time_iso, end_time_iso),
+            "ScanIndexForward": False,  # False = newest first (descending order)
+            "Limit": limit,
+        }
+
+        if combined_filter:
+            pi_params["FilterExpression"] = combined_filter
+
+        if decoded_token and "raspberry_pi" in decoded_token:
+            pi_params["ExclusiveStartKey"] = decoded_token["raspberry_pi"]
+
+        pi_response = animal_table.query(**pi_params)
+
+        # Combine and sort results
+        all_items = []
+
+        # Process API items
+        for item in api_response.get("Items", []):
             try:
                 if "time" in item:
-                    item["time"] = datetime.fromisoformat(item["time"])
-                items.append(item)
+                    # Convert string to datetime for sorting
+                    sort_time = datetime.fromisoformat(item["time"])
+                    # Store sort time separately for sorting
+                    item["_sort_time"] = sort_time
+                    # Format for response
+                    item["time"] = sort_time
+                all_items.append(item)
             except (ValueError, TypeError) as e:
                 logger.warning(f"Skipping item with invalid time: {e}")
 
-        # Prepare pagination token for next page
+        # Process Raspberry Pi items
+        for item in pi_response.get("Items", []):
+            try:
+                if "time" in item:
+                    # Convert string to datetime for sorting
+                    sort_time = datetime.fromisoformat(item["time"])
+                    # Store sort time separately for sorting
+                    item["_sort_time"] = sort_time
+                    # Format for response
+                    item["time"] = sort_time
+                all_items.append(item)
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Skipping item with invalid time: {e}")
+
+        # Sort by time (newest first)
+        all_items.sort(
+            key=lambda x: x.get("_sort_time", datetime(1970, 1, 1)), reverse=True
+        )
+
+        # Remove the sort time field used for sorting
+        for item in all_items:
+            if "_sort_time" in item:
+                del item["_sort_time"]
+
+        # Limit results to the requested number
+        all_items = all_items[:limit]
+
+        # Create combined pagination token
         next_page_token = None
-        if "LastEvaluatedKey" in response:
+        last_evaluated_keys = {}
+
+        if "LastEvaluatedKey" in api_response:
+            last_evaluated_keys["api"] = api_response["LastEvaluatedKey"]
+
+        if "LastEvaluatedKey" in pi_response:
+            last_evaluated_keys["raspberry_pi"] = pi_response["LastEvaluatedKey"]
+
+        if last_evaluated_keys:
             next_page_token = base64.b64encode(
-                json.dumps(response["LastEvaluatedKey"]).encode()
+                json.dumps(last_evaluated_keys).encode()
             ).decode()
 
         return {
-            "data": items,
-            "count": len(items),
+            "data": all_items,
+            "count": len(all_items),
             "next_token": next_page_token,
             "total_count": total_count,
         }
