@@ -39,6 +39,31 @@ class DecimalEncoder(json.JSONEncoder):
         return super(DecimalEncoder, self).default(obj)
 
 
+def convert_to_dynamo_types(item):
+    """
+    Convert Python types to DynamoDB compatible types.
+
+    Args:
+        item: Dictionary with values to convert
+
+    Returns:
+        Dictionary with converted values
+    """
+    for key, value in item.items():
+        # Convert floats to Decimal
+        if isinstance(value, float):
+            item[key] = Decimal(str(value))
+        # Convert dictionaries recursively
+        elif isinstance(value, dict):
+            item[key] = convert_to_dynamo_types(value)
+        # Convert lists recursively
+        elif isinstance(value, list):
+            item[key] = [
+                convert_to_dynamo_types(i) if isinstance(i, dict) else i for i in value
+            ]
+    return item
+
+
 def create_observation(observation: SensorObservationInDB) -> Dict[str, Any]:
     """
     Create a new observation in DynamoDB.
@@ -65,6 +90,9 @@ def create_observation(observation: SensorObservationInDB) -> Dict[str, Any]:
             observation.instrument_id
         )  # Convert to string as per your table
         item["datetime"] = observation.timestamp  # Use the timestamp directly
+
+        # Make sure numeric values are Decimal type for DynamoDB
+        item = convert_to_dynamo_types(item)
 
         # Store in DynamoDB
         response = table.put_item(Item=item)

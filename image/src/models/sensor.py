@@ -31,6 +31,29 @@ class SensorObservationBase(BaseModel):
             Decimal: lambda v: float(v),
         }
 
+    @validator("sample")
+    def validate_sample(cls, sample):
+        """Validate that the sample contains medium and metric."""
+        if "medium" not in sample or not sample["medium"]:
+            raise ValueError("Sample must include a 'medium' field")
+        if "metric" not in sample or not sample["metric"]:
+            raise ValueError("Sample must include a 'metric' field")
+        return sample
+
+    @validator("value")
+    def convert_value_to_decimal(cls, v):
+        """Convert value to Decimal for DynamoDB compatibility."""
+        if isinstance(v, float):
+            return Decimal(str(v))
+        return v
+
+    @validator("stderr")
+    def convert_stderr_to_decimal(cls, v):
+        """Convert stderr to Decimal for DynamoDB compatibility."""
+        if v is not None and isinstance(v, float):
+            return Decimal(str(v))
+        return v
+
 
 class SensorObservationCreate(SensorObservationBase):
     """Model for creating a sensor observation."""
