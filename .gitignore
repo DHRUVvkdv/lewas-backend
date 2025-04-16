@@ -15,6 +15,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+!lib/lewas-backend-infra-stack.ts
 lib64/
 parts/
 sdist/

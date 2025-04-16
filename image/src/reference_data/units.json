@@ -1,0 +1,52 @@
+{
+    "units": [
+      {
+        "unit_id": 3,
+        "name": "hectopascal",
+        "abbv": "hPa",
+        "type": "pressure"
+      },
+      {
+        "unit_id": 11,
+        "name": "volts",
+        "abbv": "V",
+        "type": "voltage"
+      },
+      {
+        "unit_id": 12,
+        "name": "degrees fahrenheit",
+        "abbv": "F",
+        "type": "temperature"
+      },
+      {
+        "unit_id": 15,
+        "name": "meters",
+        "abbv": "m",
+        "type": "length"
+      },
+      {
+        "unit_id": 19,
+        "name": "percent saturation",
+        "abbv": "%",
+        "type": "percentage"
+      },
+      {
+        "unit_id": 20,
+        "name": "centimeters per second",
+        "abbv": "cm/s",
+        "type": "velocity"
+      },
+      {
+        "unit_id": 21,
+        "name": "counts",
+        "abbv": "counts",
+        "type": "quantity"
+      },
+      {
+        "unit_id": 22,
+        "name": "degrees",
+        "abbv": "degrees",
+        "type": "angle"
+      }
+    ]
+  }

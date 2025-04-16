@@ -1,0 +1,46 @@
+{
+    "instruments": [
+      {
+        "instrument_id": 1,
+        "name": "sonde",
+        "make": "YSI",
+        "model": "6600"
+      },
+      {
+        "instrument_id": 2,
+        "name": "argonaut",
+        "make": "SonTek",
+        "model": "ADV"
+      },
+      {
+        "instrument_id": 3,
+        "name": "weather-station",
+        "make": "Davis",
+        "model": "Vantage Pro2"
+      },
+      {
+        "instrument_id": 4,
+        "name": "rain-gauge",
+        "make": "HOBO",
+        "model": "RG3"
+      },
+      {
+        "instrument_id": 5,
+        "name": "ultrasonic",
+        "make": "MaxBotix",
+        "model": "MB7389"
+      },
+      {
+        "instrument_id": 6,
+        "name": "power-meter1",
+        "make": "WattsUp",
+        "model": "Pro"
+      },
+      {
+        "instrument_id": 7,
+        "name": "power-meter2",
+        "make": "WattsUp",
+        "model": "Pro"
+      }
+    ]
+  }

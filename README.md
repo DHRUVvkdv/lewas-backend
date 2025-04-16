@@ -28,3 +28,108 @@ curl -X 'POST' \
 "location": "onsitepi",
 "parameter_type": "idk"
 }'
+
+# LEWAS Lab API
+
+This API provides access to LEWAS lab sensor data. The API is built using FastAPI and deployed on AWS Lambda with data stored in DynamoDB.
+
+## Project Structure
+
+```
+dhruvvkdv-lewas-backend/
+├── image/
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   ├── .env.example
+│   └── src/
+│       ├── api/
+│       │   ├── __init__.py
+│       │   ├── dependencies.py
+│       │   └── v1/
+│       │       ├── __init__.py
+│       │       └── sensors.py
+│       ├── db/
+│       │   ├── __init__.py
+│       │   └── sensor.py
+│       ├── models/
+│       │   ├── __init__.py
+│       │   ├── base.py
+│       │   └── sensor.py
+│       ├── services/
+│       │   ├── __init__.py
+│       │   └── sensor.py
+│       ├── utils/
+│       │   ├── __init__.py
+│       │   └── reference_data.py
+│       ├── reference_data/
+│       │   ├── instruments.json
+│       │   ├── metrics.json
+│       │   ├── units.json
+│       │   └── meta_cells.json
+│       ├── animal_data_routes.py (existing code)
+│       └── main.py
+```
+
+## API Endpoints
+
+### Sensor Data
+
+- `POST /v1/sensors/observations` - Create a new sensor observation
+- `POST /v1/sensors/observations/batch` - Create multiple sensor observations
+- `GET /v1/sensors/observations` - Get sensor observations with optional filtering
+- `GET /v1/sensors/latest` - Get latest observations for each instrument
+- `GET /v1/sensors/metadata` - Get sensor metadata
+
+## Environment Variables
+
+- `API_KEY` - API key for authentication
+- `DYNAMODB_TABLE_NAME` - DynamoDB table name
+- `AWS_REGION` - AWS region
+
+## DynamoDB Table Structure
+
+The DynamoDB table `lewas-observations` has the following structure:
+
+**Main Table:**
+
+- `PK` (Partition Key): `sensor#{instrument_id}`
+- `SK` (Sort Key): `timestamp#{iso_timestamp}`
+- `metric_id`: Number
+- `meta_id`: Number (optional)
+- `unit_id`: Number
+- `value`: Number
+- `stderr`: Number (optional)
+- `medium`: String
+- `metric_name`: String
+- `unit_name`: String
+
+**Indexes:**
+
+- GSI1 (metric-timestamp-index):
+  - `PK`: `metric#{metric_id}`
+  - `SK`: `timestamp#{iso_timestamp}`
+- GSI2 (unit-timestamp-index):
+  - `PK`: `unit#{unit_id}`
+  - `SK`: `timestamp#{iso_timestamp}`
+
+## Local Development
+
+1. Install dependencies:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. Create a `.env` file with the necessary environment variables.
+
+3. Run the API locally:
+
+   ```bash
+   uvicorn main:app --reload
+   ```
+
+4. Access the API documentation at `http://localhost:8000/docs`.
+
+## Deployment
+
+This project is deployed on AWS Lambda using the AWS CDK with the infrastructure code located in the `lewas-backend-infra` directory.
