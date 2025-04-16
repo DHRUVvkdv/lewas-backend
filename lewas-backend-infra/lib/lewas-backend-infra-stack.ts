@@ -34,29 +34,6 @@ export class LewasBackendInfraStack extends cdk.Stack {
       throw new Error("DYNAMODB_TABLE_NAME_ANIMAL environment variable is not set");
     }
 
-    // Create the DynamoDB table (if it doesn't exist)
-    const observationsTable = new dynamodb.Table(this, 'ObservationsTable', {
-      tableName: DYNAMODB_TABLE_NAME,
-      partitionKey: { name: 'sensor_id', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'datetime', type: dynamodb.AttributeType.STRING },
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.RETAIN, // IMPORTANT: Prevents data loss if stack is deleted
-    });
-
-    // Add GSIs
-    observationsTable.addGlobalSecondaryIndex({
-      indexName: 'metric_id-datetime-index',
-      partitionKey: { name: 'metric_id', type: dynamodb.AttributeType.NUMBER },
-      sortKey: { name: 'datetime', type: dynamodb.AttributeType.STRING },
-      projectionType: dynamodb.ProjectionType.ALL,
-    });
-
-    observationsTable.addGlobalSecondaryIndex({
-      indexName: 'unit_id-datetime-index',
-      partitionKey: { name: 'unit_id', type: dynamodb.AttributeType.NUMBER },
-      sortKey: { name: 'datetime', type: dynamodb.AttributeType.STRING },
-      projectionType: dynamodb.ProjectionType.ALL,
-    });
 
     // Create the Lambda function
     const apiFunction = new lambda.DockerImageFunction(this, 'ApiFunction', {
@@ -73,25 +50,26 @@ export class LewasBackendInfraStack extends cdk.Stack {
       },
     });
 
-    // Grant Lambda function permissions to access DynamoDB tables
-    observationsTable.grantReadWriteData(apiFunction);
-    
-    // Access existing animal table
-    const animalTable = dynamodb.Table.fromTableName(this, 'AnimalsTable', DYNAMODB_TABLE_NAME_ANIMAL);
-    animalTable.grantReadWriteData(apiFunction);
+    const table_lewas = dynamodb.Table.fromTableName(this, 'UsersTable', DYNAMODB_TABLE_NAME);
+    table_lewas.grantReadWriteData(apiFunction);
+
+    const table_animal_test = dynamodb.Table.fromTableName(this, 'AnimalsTable', DYNAMODB_TABLE_NAME_ANIMAL);
+    table_animal_test.grantReadWriteData(apiFunction);
 
     // Add function URL
     const functionUrl = apiFunction.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
-          });
+    });
 
-    // Add permissions for GSI access
     apiFunction.addToRolePolicy(new iam.PolicyStatement({
-      actions: ['dynamodb:Query', 'dynamodb:Scan'],
-      resources: [
-        `${observationsTable.tableArn}/index/*`,
-        `${animalTable.tableArn}/index/*`
-      ],
+      actions: ['dynamodb:Query'],
+      resources: [`${table_animal_test.tableArn}/index/*`],
+      effect: iam.Effect.ALLOW,
+    }));
+
+    apiFunction.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['dynamodb:Query'],
+      resources: [`${table_lewas.tableArn}/index/*`],
       effect: iam.Effect.ALLOW,
     }));
 
@@ -99,11 +77,6 @@ export class LewasBackendInfraStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'FunctionUrl', {
       value: functionUrl.url,
       description: 'URL for the Lambda function',
-    });
-
-    new cdk.CfnOutput(this, 'ObservationsTableName', {
-      value: observationsTable.tableName,
-      description: 'Name of the Observations DynamoDB table',
     });
   }
 }

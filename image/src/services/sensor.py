@@ -36,6 +36,13 @@ def process_observation(
         # Extract data from the observation
         instrument_name = observation.instrument
         unit_abbv = observation.unit
+
+        # Make sure the sample has the required fields
+        if "medium" not in observation.sample:
+            raise ValueError("Sample must include a 'medium' field")
+        if "metric" not in observation.sample:
+            raise ValueError("Sample must include a 'metric' field")
+
         metric_name = observation.sample.get("metric")
         medium = observation.sample.get("medium")
         meta_name = observation.sample.get("meta")
@@ -155,37 +162,71 @@ def get_observations(
         # Convert database models to response models
         observations = []
         for item in results["observations"]:
-            # Create response models
-            observation = SensorObservationResponse(
-                timestamp=item["timestamp"],
-                sample={
-                    "medium": item["medium"],
-                    "metric": item["metric_name"],
-                    "meta": (
-                        ref_data.get_meta_cells()
-                        .get(str(item.get("meta_id")), {})
-                        .get("name")
-                        if item.get("meta_id")
-                        else None
+            try:
+                # Create a safe sample dictionary
+                sample = {
+                    "medium": item.get("medium", ""),
+                    "metric": item.get("metric_name", ""),
+                }
+
+                # Add meta if available
+                meta_id = item.get("meta_id")
+                if meta_id is not None:
+                    meta_cell = next(
+                        (
+                            cell
+                            for cell in ref_data.get_all_meta_cells()
+                            if cell["meta_id"] == meta_id
+                        ),
+                        None,
+                    )
+                    if meta_cell:
+                        sample["meta"] = meta_cell.get("name", "")
+
+                # Find instrument name
+                instruments = ref_data.get_all_instruments()
+                instrument_name = next(
+                    (
+                        inst["name"]
+                        for inst in instruments
+                        if inst["instrument_id"] == item.get("instrument_id")
                     ),
-                },
-                instrument=ref_data.get_instruments()
-                .get(str(item["instrument_id"]), {})
-                .get("name", ""),
-                unit=ref_data.get_units().get(str(item["unit_id"]), {}).get("abbv", ""),
-                value=item["value"],
-                stderr=item.get("stderr"),
-                instrument_id=item["instrument_id"],
-                metric_id=item["metric_id"],
-                unit_id=item["unit_id"],
-                meta_id=item.get("meta_id"),
-                medium=item["medium"],
-            )
-            observations.append(observation)
+                    "",
+                )
+
+                # Find unit abbreviation
+                units = ref_data.get_all_units()
+                unit_abbv = next(
+                    (
+                        unit["abbv"]
+                        for unit in units
+                        if unit["unit_id"] == item.get("unit_id")
+                    ),
+                    "",
+                )
+
+                # Create response model
+                observation = SensorObservationResponse(
+                    timestamp=item.get("datetime", ""),
+                    sample=sample,
+                    instrument=instrument_name,
+                    unit=unit_abbv,
+                    value=item.get("value", 0.0),
+                    stderr=item.get("stderr"),
+                    instrument_id=item.get("instrument_id", 0),
+                    metric_id=item.get("metric_id", 0),
+                    unit_id=item.get("unit_id", 0),
+                    meta_id=meta_id,
+                    medium=item.get("medium", ""),
+                )
+                observations.append(observation)
+            except Exception as item_error:
+                logger.error(f"Error processing observation item: {item_error}")
+                # Skip this item but continue processing others
 
         return {
             "observations": observations,
-            "count": results["count"],
+            "count": len(observations),
             "next_token": results.get("next_token"),
         }
     except Exception as e:

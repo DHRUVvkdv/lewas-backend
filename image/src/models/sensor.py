@@ -15,7 +15,7 @@ class SensorObservationBase(BaseModel):
     """Base model for sensor observations."""
 
     timestamp: str = Field(..., description="ISO format timestamp")
-    sample: Dict[str, str] = Field(
+    sample: Dict[str, Any] = Field(
         ...,
         description="Sample information including medium, metric, and optional meta",
     )
@@ -39,6 +39,30 @@ class SensorObservationBase(BaseModel):
         if "metric" not in sample or not sample["metric"]:
             raise ValueError("Sample must include a 'metric' field")
         return sample
+
+    @validator("timestamp")
+    def validate_timestamp(cls, v):
+        """Validate and format the timestamp."""
+        # If it's just a time without date, add the current date
+        if ":" in v and not any(x in v for x in ["-", "T", "Z"]):
+            from datetime import datetime
+
+            today = datetime.now().strftime("%Y-%m-%d")
+            return f"{today}T{v}Z"
+
+        # If it already contains T or Z, assume it's correctly formatted
+        if "T" in v or "Z" in v:
+            return v
+
+        # Try to convert other formats to ISO
+        try:
+            from datetime import datetime
+
+            parsed_date = datetime.fromisoformat(v.replace("Z", "+00:00"))
+            return parsed_date.isoformat() + "Z"
+        except ValueError:
+            # If all else fails, just return the original
+            return v
 
     @validator("value")
     def convert_value_to_decimal(cls, v):
