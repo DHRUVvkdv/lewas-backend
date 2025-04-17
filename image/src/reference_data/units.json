@@ -1,52 +1,130 @@
 {
-    "units": [
-      {
-        "unit_id": 3,
-        "name": "hectopascal",
-        "abbv": "hPa",
-        "type": "pressure"
-      },
-      {
-        "unit_id": 11,
-        "name": "volts",
-        "abbv": "V",
-        "type": "voltage"
-      },
-      {
-        "unit_id": 12,
-        "name": "degrees fahrenheit",
-        "abbv": "F",
-        "type": "temperature"
-      },
-      {
-        "unit_id": 15,
-        "name": "meters",
-        "abbv": "m",
-        "type": "length"
-      },
-      {
-        "unit_id": 19,
-        "name": "percent saturation",
-        "abbv": "%",
-        "type": "percentage"
-      },
-      {
-        "unit_id": 20,
-        "name": "centimeters per second",
-        "abbv": "cm/s",
-        "type": "velocity"
-      },
-      {
-        "unit_id": 21,
-        "name": "counts",
-        "abbv": "counts",
-        "type": "quantity"
-      },
-      {
-        "unit_id": 22,
-        "name": "degrees",
-        "abbv": "degrees",
-        "type": "angle"
-      }
-    ]
-  }
+  "units": [
+    {
+      "unit_id": 3,
+      "name": "hectopascal",
+      "abbv": "hPa",
+      "type": "pressure"
+    },
+    {
+      "unit_id": 11,
+      "name": "volts",
+      "abbv": "V",
+      "type": "voltage"
+    },
+    {
+      "unit_id": 12,
+      "name": "degrees fahrenheit",
+      "abbv": "F",
+      "type": "temperature"
+    },
+    {
+      "unit_id": 15,
+      "name": "meters",
+      "abbv": "m",
+      "type": "length"
+    },
+    {
+      "unit_id": 19,
+      "name": "percent saturation",
+      "abbv": "%",
+      "type": "percentage"
+    },
+    {
+      "unit_id": 20,
+      "name": "centimeters per second",
+      "abbv": "cm/s",
+      "type": "velocity"
+    },
+    {
+      "unit_id": 21,
+      "name": "counts",
+      "abbv": "counts",
+      "type": "counts"
+    },
+    {
+      "unit_id": 22,
+      "name": "degrees",
+      "abbv": "degrees",
+      "type": "radial degrees"
+    },
+    {
+      "unit_id": 1,
+      "name": "degrees celsius",
+      "abbv": "C",
+      "type": "temperature"
+    },
+    {
+      "unit_id": 2,
+      "name": "meters per second",
+      "abbv": "m/s",
+      "type": "distance/time"
+    },
+    {
+      "unit_id": 4,
+      "name": "percent relative humidity",
+      "abbv": "%RH",
+      "type": "pressure"
+    },
+    {
+      "unit_id": 5,
+      "name": "millimeters",
+      "abbv": "mm",
+      "type": "distance"
+    },
+    {
+      "unit_id": 6,
+      "name": "millimeters per hour",
+      "abbv": "mm/h",
+      "type": "rate"
+    },
+    {
+      "unit_id": 7,
+      "name": "hits per square centimeter",
+      "abbv": "hits/cm2",
+      "type": "density"
+    },
+    {
+      "unit_id": 8,
+      "name": "hits per square centimeter per hour",
+      "abbv": "hits/cm2h",
+      "type": "rate density"
+    },
+    {
+      "unit_id": 9,
+      "name": "inches",
+      "abbv": "in",
+      "type": "distance"
+    },
+    {
+      "unit_id": 10,
+      "name": "seconds",
+      "abbv": "s",
+      "type": "time"
+    },
+    {
+      "unit_id": 25,
+      "name": "inches of mercury",
+      "abbv": "inHg",
+      "type": "pressure"
+    },
+    {
+      "unit_id": 26,
+      "name": "inches per hour",
+      "abbv": "in/h",
+      "type": "rate"
+    },
+    {
+      "unit_id": 27,
+      "name": "hits per square inch",
+      "abbv": "hits/in2",
+      "type": "density"
+    },
+    {
+      "unit_id": 28,
+      "name": "hits per square inch per hour",
+      "abbv": "hits/in2h",
+      "type": "rate density"
+    }
+  ]
+}

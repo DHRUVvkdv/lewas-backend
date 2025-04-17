@@ -1,94 +1,154 @@
 {
-    "metrics": [
-      {
-        "metric_id": 101,
-        "name": "temperature",
-        "medium": "water"
-      },
-      {
-        "metric_id": 108,
-        "name": "velocity-x",
-        "medium": "water"
-      },
-      {
-        "metric_id": 110,
-        "name": "velocity-y",
-        "medium": "water"
-      },
-      {
-        "metric_id": 112,
-        "name": "pressure",
-        "medium": "water"
-      },
-      {
-        "metric_id": 113,
-        "name": "velocity-z",
-        "medium": "water"
-      },
-      {
-        "metric_id": 401,
-        "name": "power-level",
-        "medium": "power"
-      },
-      {
-        "metric_id": 601,
-        "name": "roll",
-        "medium": "beam"
-      },
-      {
-        "metric_id": 602,
-        "name": "start-sample-volume",
-        "medium": "beam"
-      },
-      {
-        "metric_id": 603,
-        "name": "noise-level-y",
-        "medium": "beam"
-      },
-      {
-        "metric_id": 604,
-        "name": "pitch",
-        "medium": "beam"
-      },
-      {
-        "metric_id": 605,
-        "name": "signal-strength-y",
-        "medium": "beam"
-      },
-      {
-        "metric_id": 606,
-        "name": "end-sample-volume",
-        "medium": "beam"
-      },
-      {
-        "metric_id": 607,
-        "name": "heading",
-        "medium": "beam"
-      },
-      {
-        "metric_id": 608,
-        "name": "signal-strength-x",
-        "medium": "beam"
-      },
-      {
-        "metric_id": 609,
-        "name": "signal-strength-z",
-        "medium": "beam"
-      },
-      {
-        "metric_id": 610,
-        "name": "noise-level-z",
-        "medium": "beam"
-      },
-      {
-        "metric_id": 611,
-        "name": "noise-level-x",
-        "medium": "beam"
-      },
-      {
-        "metric_id": 612,
-        "name": "percent-pings",
-        "medium": "beam"
-      }
-    ]
-  }
+  "metrics": [
+    {
+      "metric_id": 101,
+      "name": "temperature",
+      "medium": "water"
+    },
+    {
+      "metric_id": 108,
+      "name": "velocity-x",
+      "medium": "water"
+    },
+    {
+      "metric_id": 110,
+      "name": "velocity-y",
+      "medium": "water"
+    },
+    {
+      "metric_id": 112,
+      "name": "pressure",
+      "medium": "water"
+    },
+    {
+      "metric_id": 113,
+      "name": "velocity-z",
+      "medium": "water"
+    },
+    {
+      "metric_id": 401,
+      "name": "power-level",
+      "medium": "power"
+    },
+    {
+      "metric_id": 601,
+      "name": "roll",
+      "medium": "beam"
+    },
+    {
+      "metric_id": 602,
+      "name": "start-sample-volume",
+      "medium": "beam"
+    },
+    {
+      "metric_id": 603,
+      "name": "noise-level-y",
+      "medium": "beam"
+    },
+    {
+      "metric_id": 604,
+      "name": "pitch",
+      "medium": "beam"
+    },
+    {
+      "metric_id": 605,
+      "name": "signal-strength-y",
+      "medium": "beam"
+    },
+    {
+      "metric_id": 606,
+      "name": "end-sample-volume",
+      "medium": "beam"
+    },
+    {
+      "metric_id": 607,
+      "name": "heading",
+      "medium": "beam"
+    },
+    {
+      "metric_id": 608,
+      "name": "signal-strength-x",
+      "medium": "beam"
+    },
+    {
+      "metric_id": 609,
+      "name": "signal-strength-z",
+      "medium": "beam"
+    },
+    {
+      "metric_id": 610,
+      "name": "noise-level-z",
+      "medium": "beam"
+    },
+    {
+      "metric_id": 611,
+      "name": "noise-level-x",
+      "medium": "beam"
+    },
+    {
+      "metric_id": 612,
+      "name": "percent-pings",
+      "medium": "beam"
+    },
+    {
+      "metric_id": 701,
+      "name": "temperature",
+      "medium": "air"
+    },
+    {
+      "metric_id": 702,
+      "name": "pressure",
+      "medium": "air"
+    },
+    {
+      "metric_id": 703,
+      "name": "humidity",
+      "medium": "air"
+    },
+    {
+      "metric_id": 704,
+      "name": "accumulation",
+      "medium": "rain"
+    },
+    {
+      "metric_id": 705,
+      "name": "duration",
+      "medium": "rain"
+    },
+    {
+      "metric_id": 706,
+      "name": "intensity",
+      "medium": "rain"
+    },
+    {
+      "metric_id": 707,
+      "name": "accumulation",
+      "medium": "hail"
+    },
+    {
+      "metric_id": 708,
+      "name": "duration",
+      "medium": "hail"
+    },
+    {
+      "metric_id": 709,
+      "name": "intensity",
+      "medium": "hail"
+    },
+    {
+      "metric_id": 710,
+      "name": "speed",
+      "medium": "wind"
+    },
+    {
+      "metric_id": 711,
+      "name": "direction",
+      "medium": "wind"
+    },
+    {
+      "metric_id": 712,
+      "name": "voltage",
+      "medium": "battery"
+    }
+  ]
+}
